@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Suggestion Box - University Feedback Platform</title>
+  <link rel="stylesheet" href="./styles/global.css">
+</head>
+<body>
+  <div id="app">
+    <header class="modern-header" aria-label="Site heading">
+      <div class="header-inner">
+        <h1 class="header-title">Anonymous Suggestion Box</h1>
+      </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Home Page -->
+      <section id="home-page" class="page">
+        <div class="hero">
+          <h1>Welcome to Our Feedback Platform</h1>
+          <p>Share your feedback anonymously and help us improve our services</p>
+          <button class="btn btn-primary btn-lg" onclick="navigateToPage('submit')">
+            Submit Feedback Now
+          </button>
+        </div>
+
+        <div class="features">
+          <div class="feature-card">
+            <div class="feature-icon">A</div>
+            <h3>Submit Anonymously</h3>
+            <p>Share your feedback without revealing your identity</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">R</div>
+            <h3>Get Answers</h3>
+            <p>Receive official responses from relevant departments</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">F</div>
+            <h3>Rate Answers</h3>
+            <p>Help us know if our responses were helpful</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Submit Feedback Page -->
+      <section id="submit-page" class="page active">
+        <div class="container">
+          <h2>Submit Your Feedback</h2>
+          <p class="subtitle">Help us improve. Your feedback is anonymous and confidential.</p>
+          
+          <div class="two-column-layout">
+            <!-- Left Column: Form -->
+            <div class="form-column">
+              <form id="submission-form" class="form">
+                <div class="form-group">
+                  <label for="department">Select a Department *</label>
+                  <select id="department" name="department" required>
+                    <option value="">-- Select Department --</option>
+                  </select>
+                  <span class="error-message" id="department-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label>Feedback Type *</label>
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input type="radio" name="category" value="Question" required>
+                      <span>Question</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="category" value="Complaint" required>
+                      <span>Complaint</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="category" value="Suggestion" required>
+                      <span>Suggestion</span>
+                    </label>
+                  </div>
+                  <span class="error-message" id="category-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="feedback">Your Feedback *</label>
+                  <textarea 
+                    id="feedback" 
+                    name="feedback" 
+                    rows="10" 
+                    required
+                    placeholder="Please share your feedback, suggestion, or question..."></textarea>
+                  <span class="error-message" id="feedback-error"></span>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                  <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Right Column: Feed -->
+            <div class="feed-column">
+              <h3>Already Answered</h3>
+              <p class="subtitle">Browse previously answered questions</p>
+              <div id="departments-feed" class="tags-container">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Browse/Tag Page -->
+      <section id="browse-page" class="page">
+        <div class="container">
+          <div class="tag-page-header">
+            <h2 id="tag-title">Browse Answers</h2>
+            <button class="btn btn-secondary btn-sm" onclick="navigateToPage('submit')">Back</button>
+          </div>
+
+          <div id="submissions-list" class="submissions-list">
+            <!-- Populated by JS -->
+          </div>
+
+          <div id="pagination" class="pagination">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Department Login -->
+      <section id="department-page" class="page">
+        <div class="login-container">
+          <h2>Department Staff Login</h2>
+          <form id="department-login-form" class="form">
+            <div class="form-group">
+              <label for="dept-email">Email Address</label>
+              <input type="email" id="dept-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="dept-password">Password</label>
+              <input type="password" id="dept-password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Login</button>
+            <p class="form-help">Contact administrator for credentials</p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Department Dashboard -->
+      <section id="department-dashboard-page" class="page">
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <div>
+              <h2>Department Dashboard</h2>
+              <p class="subtitle">Review pending submissions, answer them, or hide when needed.</p>
+            </div>
+            <div class="dashboard-actions">
+              <select id="department-status-filter" class="select-inline">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Answered">Answered</option>
+                <option value="Hidden">Hidden</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="refreshDepartmentDashboard()">Refresh</button>
+              <button class="btn btn-error btn-sm" onclick="handleDepartmentLogout()">Logout</button>
+            </div>
+          </div>
+
+          <div id="department-dashboard-list" class="submissions-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Login -->
+      <section id="admin-page" class="page">
+        <div class="login-container">
+          <h2>Admin Login</h2>
+          <form id="admin-login-form" class="form">
+            <div class="form-group">
+              <label for="admin-username">Username</label>
+              <input type="text" id="admin-username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="admin-password">Password</label>
+              <input type="password" id="admin-password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Login</button>
+            <p class="form-help">Admin access only</p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Admin Dashboard -->
+      <section id="admin-dashboard-page" class="page">
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <div>
+              <h2>Admin Analytics Dashboard</h2>
+              <p class="subtitle">Monitor organization-wide engagement, response rates, hidden activity, and SLA trends.</p>
+            </div>
+            <div class="dashboard-actions">
+              <button class="btn btn-secondary btn-sm" onclick="refreshAdminDashboard()">Refresh</button>
+              <button class="btn btn-error btn-sm" onclick="handleAdminLogout()">Logout</button>
+            </div>
+          </div>
+
+          <div id="admin-overview-cards" class="stats-grid">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel">
+              <h3>Department Performance</h3>
+              <div id="admin-department-performance" class="table-wrap"></div>
+            </div>
+
+            <div class="panel keyword-panel">
+              <h3>Top Keywords</h3>
+              <div id="admin-keywords" class="keyword-cloud"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid dashboard-grid-single">
+            <div class="panel">
+              <h3>Engagement Overview</h3>
+              <div id="admin-engagement-line" class="line-chart"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Department Access Management</h3>
+            <div class="dashboard-grid dashboard-grid-single">
+              <form id="admin-create-department-user-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-dept-select">Department *</label>
+                  <select id="admin-dept-select" name="department_id" required>
+                    <option value="">-- Select Department --</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="admin-dept-password">Password *</label>
+                  <input type="password" id="admin-dept-password" name="password" minlength="6" required>
+                </div>
+                <div class="form-group">
+                  <label for="admin-dept-email">Email Address *</label>
+                  <input type="email" id="admin-dept-email" name="email" required>
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-primary btn-sm">Create Login</button>
+                </div>
+              </form>
+
+              <form id="admin-create-department-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-new-dept-name">New Department Name *</label>
+                  <input type="text" id="admin-new-dept-name" name="name" required>
+                </div>
+                <div class="form-group">
+                  <label for="admin-new-dept-description">Description</label>
+                  <input type="text" id="admin-new-dept-description" name="description">
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-secondary btn-sm">Add Department</button>
+                </div>
+              </form>
+            </div>
+            <p class="subtle" id="admin-create-user-result"></p>
+            <p class="subtle" id="admin-create-department-result"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal hidden">
+      <div class="modal-backdrop" onclick="closeModal()"></div>
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">X</button>
+        <svg class="modal-icon" viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+        </svg>
+        <h2>Thank You!</h2>
+        <p>Thank you for your submission. We will get back to you within 2 weeks.</p>
+        <button class="btn btn-primary" onclick="closeModal()">OK, Got It</button>
+      </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="toast hidden">
+      <span id="error-message"></span>
+      <button onclick="closeErrorToast()">X</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./api/client.js"></script>
+  <script src="./pages/home.js"></script>
+  <script src="./pages/submit.js"></script>
+  <script src="./pages/browse.js"></script>
+  <script src="./pages/departmentDashboard.js"></script>
+  <script src="./pages/adminDashboard.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

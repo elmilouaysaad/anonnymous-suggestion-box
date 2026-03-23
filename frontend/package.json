@@ -1,0 +1,18 @@
+{
+  "name": "suggestion-box-frontend",
+  "version": "1.0.0",
+  "description": "Anonymous Suggestion Box Platform - Frontend",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.3.0"
+  },
+  "devDependencies": {
+    "parcel": "^2.8.0"
+  },
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "dev": "parcel serve src/index.html --port 3001",
+    "clean": "rm -rf dist .parcel-cache"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "suggestion-box-backend",
+  "version": "1.0.0",
+  "description": "Anonymous Suggestion Box Platform - Backend API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "migrate:up": "node migrations/migrate.js",
+    "migrate:down": "node migrations/rollback.js",
+    "seed": "psql -U $DB_USER -d $DB_NAME -f seeds/seed.sql",
+    "lint": "eslint src/",
+    "format": "prettier --write src/"
+  },
+  "keywords": [
+    "feedback",
+    "anonymous",
+    "university"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "pg": "^8.8.0",
+    "sequelize": "^6.28.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "joi": "^17.9.0",
+    "morgan": "^1.10.0",
+    "axios": "^1.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.33.0",
+    "prettier": "^2.8.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
