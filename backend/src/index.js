@@ -56,6 +56,9 @@ app.use((req, res, next) => {
 if (isVercel) {
   app.use(async (req, res, next) => {
     try {
+      if (req.path === '/health' || req.path.startsWith('/health/')) {
+        return next();
+      }
       await ensureDatabaseReady();
       next();
     } catch (error) {
