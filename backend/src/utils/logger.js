@@ -4,7 +4,11 @@ const path = require('path');
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, '../../logs');
 if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
+  try {
+    fs.mkdirSync(logsDir, { recursive: true });
+  } catch (error) {
+    // Serverless runtimes can have read-only filesystems; console logging still works.
+  }
 }
 
 const LOG_LEVEL = {

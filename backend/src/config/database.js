@@ -1,6 +1,11 @@
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
+const shouldUseSsl =
+  process.env.DB_SSL === 'true' ||
+  process.env.DB_SSL === '1' ||
+  process.env.NODE_ENV === 'production';
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -19,7 +24,15 @@ const sequelize = new Sequelize(
     define: {
       timestamps: true,
       underscored: true
-    }
+    },
+    dialectOptions: shouldUseSsl
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
+        }
+      : {}
   }
 );
 
