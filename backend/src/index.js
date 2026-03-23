@@ -18,6 +18,20 @@ const corsMiddleware = require('./middleware/cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isVercel = process.env.VERCEL === '1';
+let dbReadyPromise = null;
+
+const ensureDatabaseReady = async () => {
+  if (!dbReadyPromise) {
+    dbReadyPromise = sequelize.authenticate().then(() => {
+      logger.info('✓ Database connection successful');
+      logger.info('✓ Database models synced');
+      return true;
+    });
+  }
+
+  return dbReadyPromise;
+};
 
 // ============ MIDDLEWARE ============
 
@@ -37,6 +51,18 @@ app.use((req, res, next) => {
   logger.info(`[${req.id}] ${req.method} ${req.path}`);
   next();
 });
+
+// Ensure DB is initialized for serverless runtime before routes execute.
+if (isVercel) {
+  app.use(async (req, res, next) => {
+    try {
+      await ensureDatabaseReady();
+      next();
+    } catch (error) {
+      next(error);
+    }
+  });
+}
 
 // ============ ROUTES ============
 
@@ -70,13 +96,7 @@ app.use(errorHandler);
 
 const startServer = async () => {
   try {
-    // Test database connection
-    await sequelize.authenticate();
-    logger.info('✓ Database connection successful');
-
-    // Sync models (use migrations in production)
-    // await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-    logger.info('✓ Database models synced');
+    await ensureDatabaseReady();
 
     // Start server
     const server = app.listen(PORT, () => {
@@ -100,7 +120,9 @@ const startServer = async () => {
   }
 };
 
-// Start the server
-startServer();
+// Start the server only for local/traditional runtimes.
+if (!isVercel) {
+  startServer();
+}
 
 module.exports = app;
