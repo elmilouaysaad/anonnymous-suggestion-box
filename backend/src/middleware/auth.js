@@ -5,7 +5,7 @@ const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
-  }
+   }
 
   if (req.headers['x-session-id']) {
     return req.headers['x-session-id'];
