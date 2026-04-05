@@ -1,5 +1,5 @@
 /**
- * Admin Dashboard
+ * Dashboard Analytics
  */
 
 function getApiClient() {
@@ -12,14 +12,11 @@ function getApiClient() {
   return globalThis.apiClient;
 }
 
-async function loadAdminDashboard() {
-  setupAdminDepartmentUserForm();
-  setupAdminDepartmentCreateForm();
-  await loadAdminDepartmentOptions();
-  await refreshAdminDashboard();
+async function loadDashboardMain() {
+  await refreshDashboardMain();
 }
 
-async function refreshAdminDashboard() {
+async function refreshDashboardMain() {
   try {
     const [analyticsResponse, keywordsResponse, submissionsResponse, engagementTrendResponse] = await Promise.all([
       getApiClient().getAnalytics(),
@@ -39,10 +36,10 @@ async function refreshAdminDashboard() {
   } catch (error) {
     if (String(error.message || '').includes('401')) {
       showErrorToast('Session expired. Please log in again.');
-      navigateToPage('admin');
+      navigateToPage('dashboard');
       return;
     }
-    showErrorToast(error.message || 'Failed to load admin dashboard');
+    showErrorToast(error.message || 'Failed to load dashboard');
   }
 }
 
@@ -62,7 +59,7 @@ function renderAdminOverview(data, sla) {
     { label: 'Hidden', value: overview.hidden_submissions || 0 },
     { label: 'Helpful %', value: `${helpfulness.helpful_percentage || 0}%` },
     { label: 'Late > 2 Weeks', value: sla?.lateFeedback || 0 },
-    { label: 'No Feedback > 2 Weeks', value: sla?.noFeedback || 0 }
+    { label: 'No Feedback > 3 Weeks', value: sla?.noFeedback || 0 }
   ];
 
   container.innerHTML = cards
@@ -123,7 +120,7 @@ function renderAdminDepartmentPerformance(rows, submissions, slaByDepartment) {
           <th>Rate</th>
           <th>Sentiment</th>
           <th>Late > 2w</th>
-          <th>No Feedback > 2w</th>
+          <th>No Feedback > 3w</th>
         </tr>
       </thead>
       <tbody>
@@ -358,115 +355,22 @@ function toSentimentScore(sentiment, total) {
   return Math.round(weighted / total);
 }
 
-function setupAdminDepartmentUserForm() {
-  const form = document.getElementById('admin-create-department-user-form');
-  if (!form || form.dataset.bound === 'true') {
-    return;
-  }
-
-  form.addEventListener('submit', handleAdminCreateDepartmentUser);
-  form.dataset.bound = 'true';
-}
-
-function setupAdminDepartmentCreateForm() {
-  const form = document.getElementById('admin-create-department-form');
-  if (!form || form.dataset.bound === 'true') {
-    return;
-  }
-
-  form.addEventListener('submit', handleAdminCreateDepartment);
-  form.dataset.bound = 'true';
-}
-
-async function loadAdminDepartmentOptions() {
-  const select = document.getElementById('admin-dept-select');
-  if (!select) {
-    return;
-  }
-
-  try {
-    const response = await getApiClient().getDepartments();
-    const departments = response?.data || [];
-
-    select.innerHTML = '<option value="">-- Select Department --</option>';
-    departments.forEach((department) => {
-      const option = document.createElement('option');
-      option.value = department.id;
-      option.textContent = department.name;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    showErrorToast(error.message || 'Failed to load departments for admin form');
-  }
-}
-
-async function handleAdminCreateDepartmentUser(event) {
-  event.preventDefault();
-
-  const form = event.target;
-  const formData = new FormData(form);
-  const payload = {
-    department_id: Number(formData.get('department_id')),
-    password: String(formData.get('password') || ''),
-    email: String(formData.get('email') || '').trim().toLowerCase()
-  };
-
-  if (!payload.department_id || !payload.email || !payload.password) {
-    showErrorToast('Department, email, and password are required');
-    return;
-  }
-
-  try {
-    const response = await getApiClient().createDepartmentUser(payload);
-    const result = document.getElementById('admin-create-user-result');
-    const created = response?.data || {};
-    if (result) {
-      result.textContent = `Created login ${created.email || payload.email} for ${created.department?.name || 'selected department'}.`;
-    }
-    form.reset();
-    showErrorToast('Department credentials created successfully');
-  } catch (error) {
-    showErrorToast(error.message || 'Failed to create department credentials');
-  }
-}
-
-async function handleAdminCreateDepartment(event) {
-  event.preventDefault();
-
-  const form = event.target;
-  const formData = new FormData(form);
-  const payload = {
-    name: String(formData.get('name') || '').trim(),
-    description: String(formData.get('description') || '').trim()
-  };
-
-  if (!payload.name) {
-    showErrorToast('Department name is required');
-    return;
-  }
-
-  try {
-    const response = await getApiClient().createDepartment(payload);
-    const result = document.getElementById('admin-create-department-result');
-    const created = response?.data || {};
-    if (result) {
-      result.textContent = `Department ${created.name || payload.name} created.`;
-    }
-    form.reset();
-    await loadAdminDepartmentOptions();
-    showErrorToast('Department created successfully');
-  } catch (error) {
-    showErrorToast(error.message || 'Failed to create department');
-  }
-}
-
-async function handleAdminLogout() {
+async function handleDashboardLogout() {
   try {
     await getApiClient().adminLogout();
   } catch (error) {
     // Continue local logout state even if API call fails.
   }
 
-  navigateToPage('admin');
+  navigateToPage('dashboard');
   showErrorToast('Logged out.');
+}
+
+// Backward-compatible aliases for older UI bindings.
+async function loadAdminDashboard() {
+  await loadDashboardMain();
+}
+
+async function refreshAdminDashboard() {
+  await refreshDashboardMain();
 }

@@ -8,6 +8,11 @@ let currentDepartment = null;
 let currentSort = 'newest';
 const ITEMS_PER_PAGE = 10;
 
+function isGeneralSlug(slug) {
+  const normalized = String(slug || '').trim().toLowerCase();
+  return normalized === 'general' || normalized === 'genral';
+}
+
 function getApiClient() {
   if (!globalThis.apiClient && globalThis.ApiClient) {
     globalThis.apiClient = new globalThis.ApiClient();
@@ -44,7 +49,7 @@ async function loadBrowsePageWithDepartment(slug, name) {
   // Highlight the correct department button (departments already populated by loadBrowsePage)
   document.querySelectorAll('#departments-feed .tag-button').forEach(btn => {
     btn.classList.remove('active');
-    if (btn.textContent === name || (slug === 'general' && btn.textContent === 'General')) {
+    if (btn.textContent === name || (isGeneralSlug(slug) && btn.textContent === 'General')) {
       btn.classList.add('active');
     }
   });
@@ -61,7 +66,7 @@ function populateBrowseDepartments(departments) {
   const generalButton = document.createElement('button');
   generalButton.className = 'tag-button';
   generalButton.textContent = 'General';
-  if (currentDepartment === 'general') {
+  if (isGeneralSlug(currentDepartment)) {
     generalButton.classList.add('active');
   }
   generalButton.onclick = (e) => {
@@ -76,7 +81,7 @@ function populateBrowseDepartments(departments) {
 
   departments.forEach(dept => {
     // Skip General since we already added it manually
-    if (dept.slug === 'general') {
+    if (isGeneralSlug(dept.slug)) {
       return;
     }
     
@@ -237,11 +242,11 @@ function createSubmissionCard(submission) {
         ${helpfulVotes} of ${totalVotes} people found this helpful (${helpfulPercent}%)
       </div>
       <div class="helpfulness-buttons">
-        <button class="helpfulness-btn" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="true">
-          Yes
+        <button class="helpfulness-btn helpfulness-btn-positive" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="true" title="Helpful">
+          😊 Helpful
         </button>
-        <button class="helpfulness-btn" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="false">
-          No
+        <button class="helpfulness-btn helpfulness-btn-negative" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="false" title="Not Helpful">
+          😞 Not Helpful
         </button>
       </div>
     </div>

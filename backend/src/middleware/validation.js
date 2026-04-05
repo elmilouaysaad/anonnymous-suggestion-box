@@ -44,6 +44,39 @@ const schemas = {
     })
   }),
 
+  departmentPasswordUpdate: Joi.object({
+    department_id: Joi.number().integer().required().messages({
+      'number.base': 'Department is required'
+    }),
+    email: Joi.string().trim().email().max(255).required().messages({
+      'string.email': 'Valid email is required',
+      'string.empty': 'Email is required'
+    }),
+    new_password: Joi.string().min(6).max(255).required().messages({
+      'string.min': 'Password must be at least 6 characters'
+    })
+  }),
+
+  adminPasswordUpdate: Joi.object({
+    username: Joi.string().trim().min(3).max(50).required().messages({
+      'string.empty': 'Username is required'
+    }),
+    new_password: Joi.string().min(6).max(255).required().messages({
+      'string.min': 'Password must be at least 6 characters'
+    })
+  }),
+
+  dashboardUserCreate: Joi.object({
+    password: Joi.string().min(6).max(255).required().messages({
+      'string.min': 'Password must be at least 6 characters'
+    }),
+    email: Joi.string().trim().email().max(255).required().messages({
+      'string.email': 'Valid email is required',
+      'string.empty': 'Email is required'
+    }),
+    permissions: Joi.array().items(Joi.string().trim().max(100)).optional()
+  }),
+
   departmentCreate: Joi.object({
     name: Joi.string().trim().min(2).max(255).required().messages({
       'string.empty': 'Department name is required'
@@ -57,6 +90,19 @@ const schemas = {
       'string.empty': 'Answer text is required'
     }),
     answered_by: Joi.string().max(255).optional()
+  }),
+
+  departmentDeleteParams: Joi.object({
+    id: Joi.number().integer().required().messages({
+      'number.base': 'Department ID must be a number'
+    })
+  }),
+
+  dashboardUserDeleteParams: Joi.object({
+    email: Joi.string().trim().email().max(255).required().messages({
+      'string.email': 'Valid email is required',
+      'string.empty': 'Email is required'
+    })
   })
 };
 
@@ -80,12 +126,37 @@ const validate = (schema) => {
   };
 };
 
+const validateParams = (schema) => {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.params, {
+      abortEarly: false,
+      stripUnknown: true
+    });
+
+    if (error) {
+      const messages = error.details.map((detail) => ({
+        field: detail.path[0],
+        message: detail.message
+      }));
+      throw new AppError(messages[0].message, 400, 'VALIDATION_ERROR');
+    }
+
+    req.params = value;
+    next();
+  };
+};
+
 module.exports = {
   validateSubmission: validate(schemas.submission),
   validateHelpfulness: validate(schemas.helpfulness),
   validateDepartmentLogin: validate(schemas.departmentLogin),
   validateAdminLogin: validate(schemas.adminLogin),
   validateDepartmentUserCreate: validate(schemas.departmentUserCreate),
+  validateDepartmentPasswordUpdate: validate(schemas.departmentPasswordUpdate),
+  validateAdminPasswordUpdate: validate(schemas.adminPasswordUpdate),
+  validateDashboardUserCreate: validate(schemas.dashboardUserCreate),
   validateDepartmentCreate: validate(schemas.departmentCreate),
-  validateAnswer: validate(schemas.answer)
+  validateAnswer: validate(schemas.answer),
+  validateDepartmentDeleteParams: validateParams(schemas.departmentDeleteParams),
+  validateDashboardUserDeleteParams: validateParams(schemas.dashboardUserDeleteParams)
 };

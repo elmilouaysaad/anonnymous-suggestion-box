@@ -66,7 +66,36 @@ const requireAdminAuth = (req, res, next) => {
   }
 };
 
+const requireSuperadminAuth = (req, res, next) => {
+  try {
+    const token = getTokenFromRequest(req);
+    if (!token) {
+      throw new AppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const payload = verifyToken(token);
+    const permissions = Array.isArray(payload.permissions) ? payload.permissions : [];
+    const hasSuperadminAccess = Boolean(payload.is_superadmin)
+      || permissions.includes('superadmin')
+      || permissions.includes('manage_department_users');
+    const isLegacyAdminWithoutPermissions = payload.role === 'admin' && permissions.length === 0;
+
+    if (payload.role !== 'admin' || (!hasSuperadminAccess && !isLegacyAdminWithoutPermissions)) {
+      throw new AppError('Superadmin privileges required', 403, 'FORBIDDEN');
+    }
+
+    req.auth = payload;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+      return next(new AppError('Invalid or expired session', 401, 'UNAUTHORIZED'));
+    }
+    return next(error);
+  }
+};
+
 module.exports = {
   requireDepartmentAuth,
-  requireAdminAuth
+  requireAdminAuth,
+  requireSuperadminAuth
 };

@@ -10,6 +10,10 @@
   <div id="app">
     <header class="modern-header" aria-label="Site heading">
       <div class="header-inner">
+        <div class="header-logo-section">
+          <!-- Logo placeholder - add your logo here -->
+          <img id="header-logo" src="./assets/logo.png" alt="University Logo" class="header-logo" onerror="this.style.display='none';">
+        </div>
         <h1 class="header-title">Anonymous Suggestion Box</h1>
       </div>
     </header>
@@ -18,10 +22,10 @@
       <!-- Home Page -->
       <section id="home-page" class="page">
         <div class="hero">
-          <h1>Welcome to Our Feedback Platform</h1>
-          <p>Share your feedback anonymously and help us improve our services</p>
+          <h1>Welcome to Our Concerns Platform</h1>
+          <p>Share your concerns anonymously and help the university with operational excellence</p>
           <button class="btn btn-primary btn-lg" onclick="navigateToPage('submit')">
-            Submit Feedback Now
+            Submit Your Concern
           </button>
         </div>
 
@@ -29,7 +33,7 @@
           <div class="feature-card">
             <div class="feature-icon">A</div>
             <h3>Submit Anonymously</h3>
-            <p>Share your feedback without revealing your identity</p>
+            <p>Share your concerns without revealing your identity</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">R</div>
@@ -44,18 +48,18 @@
         </div>
       </section>
 
-      <!-- Submit Feedback Page -->
+      <!-- Submit Concern Page -->
       <section id="submit-page" class="page active">
         <div class="container">
-          <h2>Submit Your Feedback</h2>
-          <p class="subtitle">Help us improve. Your feedback is anonymous and confidential.</p>
+          <h2>Submit Your Concern</h2>
+          <p class="subtitle">Help the university with operational excellence. Your concern is anonymous and confidential.</p>
           
           <div class="two-column-layout">
             <!-- Left Column: Form -->
             <div class="form-column">
               <form id="submission-form" class="form">
                 <div class="form-group">
-                  <label for="department">Select a Department *</label>
+                  <label for="department">Concerned Department *</label>
                   <select id="department" name="department" required>
                     <option value="">-- Select Department --</option>
                   </select>
@@ -63,37 +67,29 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Feedback Type *</label>
-                  <div class="radio-group">
-                    <label class="radio-label">
-                      <input type="radio" name="category" value="Question" required>
-                      <span>Question</span>
-                    </label>
-                    <label class="radio-label">
-                      <input type="radio" name="category" value="Complaint" required>
-                      <span>Complaint</span>
-                    </label>
-                    <label class="radio-label">
-                      <input type="radio" name="category" value="Suggestion" required>
-                      <span>Suggestion</span>
-                    </label>
-                  </div>
+                  <label for="category">Concern Type *</label>
+                  <select id="category" name="category" required>
+                    <option value="">-- Select Type --</option>
+                    <option value="Question">Question</option>
+                    <option value="Complaint">Complaint</option>
+                    <option value="Suggestion">Suggestion</option>
+                  </select>
                   <span class="error-message" id="category-error"></span>
                 </div>
 
                 <div class="form-group">
-                  <label for="feedback">Your Feedback *</label>
+                  <label for="feedback">Your Concern *</label>
                   <textarea 
                     id="feedback" 
                     name="feedback" 
                     rows="10" 
                     required
-                    placeholder="Please share your feedback, suggestion, or question..."></textarea>
+                    placeholder="Please share your concern, suggestion, or question..."></textarea>
                   <span class="error-message" id="feedback-error"></span>
                 </div>
 
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                  <button type="submit" class="btn btn-primary">Submit Your Concern</button>
                   <button type="reset" class="btn btn-secondary">Clear</button>
                 </div>
               </form>
@@ -153,8 +149,8 @@
         <div class="container dashboard-container">
           <div class="dashboard-header">
             <div>
-              <h2>Department Dashboard</h2>
-              <p class="subtitle">Review pending submissions, answer them, or hide when needed.</p>
+              <h2>Department Feedback Interface</h2>
+              <p class="subtitle">Review pending submissions, answer them, or hide when needed. Every concerned department will answer your request within 2 weeks.</p>
             </div>
             <div class="dashboard-actions">
               <select id="department-status-filter" class="select-inline">
@@ -174,36 +170,36 @@
         </div>
       </section>
 
-      <!-- Admin Login -->
-      <section id="admin-page" class="page">
+      <!-- Dashboard Login -->
+      <section id="dashboard-page" class="page">
         <div class="login-container">
-          <h2>Admin Login</h2>
-          <form id="admin-login-form" class="form">
+          <h2>Dashboard Login</h2>
+          <form id="dashboard-login-form" class="form">
             <div class="form-group">
-              <label for="admin-username">Username</label>
-              <input type="text" id="admin-username" name="username" required>
+              <label for="dashboard-username">Username</label>
+              <input type="text" id="dashboard-username" name="username" required>
             </div>
             <div class="form-group">
-              <label for="admin-password">Password</label>
-              <input type="password" id="admin-password" name="password" required>
+              <label for="dashboard-password">Password</label>
+              <input type="password" id="dashboard-password" name="password" required>
             </div>
             <button type="submit" class="btn btn-primary btn-full">Login</button>
-            <p class="form-help">Admin access only</p>
+            <p class="form-help">Use current dashboard credentials</p>
           </form>
         </div>
       </section>
 
-      <!-- Admin Dashboard -->
-      <section id="admin-dashboard-page" class="page">
+      <!-- Dashboard Main -->
+      <section id="dashboard-main-page" class="page">
         <div class="container dashboard-container">
           <div class="dashboard-header">
             <div>
-              <h2>Admin Analytics Dashboard</h2>
+              <h2>Dashboard</h2>
               <p class="subtitle">Monitor organization-wide engagement, response rates, hidden activity, and SLA trends.</p>
             </div>
             <div class="dashboard-actions">
-              <button class="btn btn-secondary btn-sm" onclick="refreshAdminDashboard()">Refresh</button>
-              <button class="btn btn-error btn-sm" onclick="handleAdminLogout()">Logout</button>
+              <button class="btn btn-secondary btn-sm" onclick="refreshDashboardMain()">Refresh</button>
+              <button class="btn btn-error btn-sm" onclick="handleDashboardLogout()">Logout</button>
             </div>
           </div>
 
@@ -230,29 +226,71 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- Admin Login -->
+      <section id="admin-page" class="page">
+        <div class="login-container">
+          <h2>Admin Password Management Login</h2>
+          <form id="admin-login-form" class="form">
+            <div class="form-group">
+              <label for="admin-username">Username</label>
+              <input type="text" id="admin-username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="admin-password">Password</label>
+              <input type="password" id="admin-password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Login</button>
+            <p class="form-help">Superadmin access required for password management</p>
+          </form>
+        </div>
+      </section>
+
+      <!-- Admin Password Management -->
+      <section id="admin-management-page" class="page">
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <div>
+              <h2>Admin Password Management</h2>
+              <p class="subtitle">Manage passwords for department users and dashboard users.</p>
+            </div>
+            <div class="dashboard-actions">
+              <button class="btn btn-secondary btn-sm" onclick="loadAdminManagement()">Refresh</button>
+              <button class="btn btn-error btn-sm" onclick="handleAdminLogout()">Logout</button>
+            </div>
+          </div>
+
           <div class="panel">
-            <h3>Department Access Management</h3>
+            <h3>Department Password Management</h3>
             <div class="dashboard-grid dashboard-grid-single">
-              <form id="admin-create-department-user-form" class="compact-form-grid">
+              <form id="admin-update-department-password-form" class="compact-form-grid">
                 <div class="form-group">
-                  <label for="admin-dept-select">Department *</label>
-                  <select id="admin-dept-select" name="department_id" required>
+                  <label for="admin-manage-dept-select">Department *</label>
+                  <select id="admin-manage-dept-select" name="department_id" required>
                     <option value="">-- Select Department --</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="admin-dept-password">Password *</label>
-                  <input type="password" id="admin-dept-password" name="password" minlength="6" required>
+                  <label for="admin-manage-dept-email">Department User Email *</label>
+                  <input type="email" id="admin-manage-dept-email" name="email" required>
                 </div>
                 <div class="form-group">
-                  <label for="admin-dept-email">Email Address *</label>
-                  <input type="email" id="admin-dept-email" name="email" required>
+                  <label for="admin-manage-dept-password">New Password *</label>
+                  <input type="password" id="admin-manage-dept-password" name="new_password" minlength="6" required>
                 </div>
                 <div class="form-actions compact-form-actions">
-                  <button type="submit" class="btn btn-primary btn-sm">Create Login</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Update Department Password</button>
                 </div>
               </form>
+            </div>
+            <p class="subtle" id="admin-manage-department-result"></p>
+          </div>
 
+          <div class="panel">
+            <h3>Department Management</h3>
+            <div class="dashboard-grid dashboard-grid-single">
               <form id="admin-create-department-form" class="compact-form-grid">
                 <div class="form-group">
                   <label for="admin-new-dept-name">New Department Name *</label>
@@ -263,13 +301,75 @@
                   <input type="text" id="admin-new-dept-description" name="description">
                 </div>
                 <div class="form-actions compact-form-actions">
-                  <button type="submit" class="btn btn-secondary btn-sm">Add Department</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Add Department</button>
                 </div>
               </form>
             </div>
-            <p class="subtle" id="admin-create-user-result"></p>
-            <p class="subtle" id="admin-create-department-result"></p>
+            <div class="dashboard-grid dashboard-grid-single">
+              <form id="admin-delete-department-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-delete-dept-select">Department to Remove *</label>
+                  <select id="admin-delete-dept-select" name="department_id" required>
+                    <option value="">-- Select Department --</option>
+                  </select>
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-error btn-sm">Remove Department</button>
+                </div>
+              </form>
             </div>
+            <p class="subtle" id="admin-department-management-result"></p>
+          </div>
+
+          <div class="panel">
+            <h3>Dashboard Password Management</h3>
+            <div class="dashboard-grid dashboard-grid-single">
+              <form id="admin-update-dashboard-password-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-manage-dashboard-username">Dashboard Username *</label>
+                  <input type="text" id="admin-manage-dashboard-username" name="username" required>
+                </div>
+                <div class="form-group">
+                  <label for="admin-manage-dashboard-password">New Password *</label>
+                  <input type="password" id="admin-manage-dashboard-password" name="new_password" minlength="6" required>
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-secondary btn-sm">Update Dashboard Password</button>
+                </div>
+              </form>
+            </div>
+            <p class="subtle" id="admin-manage-dashboard-result"></p>
+          </div>
+
+          <div class="panel">
+            <h3>Dashboard User Management</h3>
+            <div class="dashboard-grid dashboard-grid-single">
+              <form id="admin-create-dashboard-user-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-new-dashboard-email">Email *</label>
+                  <input type="email" id="admin-new-dashboard-email" name="email" required>
+                </div>
+                <div class="form-group">
+                  <label for="admin-new-dashboard-password">Password *</label>
+                  <input type="password" id="admin-new-dashboard-password" name="password" minlength="6" required>
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-primary btn-sm">Add Dashboard User</button>
+                </div>
+              </form>
+            </div>
+            <div class="dashboard-grid dashboard-grid-single">
+              <form id="admin-delete-dashboard-user-form" class="compact-form-grid">
+                <div class="form-group">
+                  <label for="admin-delete-dashboard-email">Dashboard Email to Remove *</label>
+                  <input type="email" id="admin-delete-dashboard-email" name="email" required>
+                </div>
+                <div class="form-actions compact-form-actions">
+                  <button type="submit" class="btn btn-error btn-sm">Remove Dashboard User</button>
+                </div>
+              </form>
+            </div>
+            <p class="subtle" id="admin-dashboard-user-management-result"></p>
           </div>
         </div>
       </section>
@@ -303,6 +403,7 @@
   <script src="./pages/browse.js"></script>
   <script src="./pages/departmentDashboard.js"></script>
   <script src="./pages/adminDashboard.js"></script>
+  <script src="./pages/adminManagement.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

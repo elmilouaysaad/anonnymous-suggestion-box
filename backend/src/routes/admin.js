@@ -9,11 +9,16 @@ const DepartmentUser = require('../models/DepartmentUser');
 const Answer = require('../models/Answer');
 const HelpfulnessFeedback = require('../models/HelpfulnessFeedback');
 const { AppError } = require('../middleware/errorHandler');
-const { requireAdminAuth } = require('../middleware/auth');
+const { requireAdminAuth, requireSuperadminAuth } = require('../middleware/auth');
 const {
   validateAdminLogin,
   validateDepartmentUserCreate,
-  validateDepartmentCreate
+  validateDepartmentPasswordUpdate,
+  validateAdminPasswordUpdate,
+  validateDashboardUserCreate,
+  validateDepartmentCreate,
+  validateDepartmentDeleteParams,
+  validateDashboardUserDeleteParams
 } = require('../middleware/validation');
 const logger = require('../utils/logger');
 
@@ -33,6 +38,10 @@ router.post('/login', validateAdminLogin, async (req, res, next) => {
       throw new AppError('Invalid username or password', 401, 'UNAUTHORIZED');
     }
 
+    const adminPermissions = Array.isArray(admin.permissions) ? admin.permissions : [];
+    const isSuperadmin =
+      adminPermissions.includes('superadmin') || adminPermissions.includes('manage_department_users');
+
     const isValidPassword = await admin.validatePassword(password);
     if (!isValidPassword) {
       throw new AppError('Invalid username or password', 401, 'UNAUTHORIZED');
@@ -43,7 +52,8 @@ router.post('/login', validateAdminLogin, async (req, res, next) => {
         userId: admin.id,
         username: admin.username,
         role: 'admin',
-        permissions: admin.permissions || []
+        is_superadmin: isSuperadmin,
+        permissions: adminPermissions
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.SESSION_TIMEOUT || '4h' }
@@ -63,7 +73,7 @@ router.post('/login', validateAdminLogin, async (req, res, next) => {
           id: admin.id,
           username: admin.username,
           full_name: admin.full_name,
-          permissions: admin.permissions || []
+          permissions: adminPermissions
         }
       }
     });
@@ -212,7 +222,7 @@ router.get('/engagement-trend', requireAdminAuth, async (req, res, next) => {
   }
 });
 
-router.post('/departments', requireAdminAuth, validateDepartmentCreate, async (req, res, next) => {
+router.post('/departments', requireSuperadminAuth, validateDepartmentCreate, async (req, res, next) => {
   try {
     const { name, description } = req.body;
     const normalizedSlug = slugifyDepartmentName(name);
@@ -256,7 +266,57 @@ router.post('/departments', requireAdminAuth, validateDepartmentCreate, async (r
   }
 });
 
-router.post('/department-users', requireAdminAuth, validateDepartmentUserCreate, async (req, res, next) => {
+router.delete(
+  '/departments/:id',
+  requireSuperadminAuth,
+  validateDepartmentDeleteParams,
+  async (req, res, next) => {
+    try {
+      const departmentId = parseInt(req.params.id, 10);
+      const department = await Department.findByPk(departmentId);
+
+      if (!department) {
+        throw new AppError('Department not found', 404, 'NOT_FOUND');
+      }
+
+      const departmentSlug = String(department.slug || '').toLowerCase();
+      if (departmentSlug === 'general' || departmentSlug === 'genral') {
+        throw new AppError('General department cannot be deleted', 400, 'INVALID_OPERATION');
+      }
+
+      const [submissionCount, departmentUserCount] = await Promise.all([
+        Submission.count({ where: { department_id: departmentId } }),
+        DepartmentUser.count({ where: { department_id: departmentId } })
+      ]);
+
+      if (submissionCount > 0 || departmentUserCount > 0) {
+        throw new AppError(
+          'Cannot delete department with existing submissions or users',
+          400,
+          'INVALID_OPERATION'
+        );
+      }
+
+      await department.destroy();
+
+      logger.info(`[Admin] Department ${department.slug} deleted by ${req.auth.username}`);
+
+      res.json({
+        success: true,
+        message: 'Department deleted successfully',
+        data: {
+          id: departmentId,
+          slug: department.slug,
+          name: department.name
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post('/department-users', requireSuperadminAuth, validateDepartmentUserCreate, async (req, res, next) => {
   try {
     const {
       department_id,
@@ -316,6 +376,178 @@ router.post('/department-users', requireAdminAuth, validateDepartmentUserCreate,
     next(error);
   }
 });
+
+router.patch(
+  '/department-users/password',
+  requireSuperadminAuth,
+  validateDepartmentPasswordUpdate,
+  async (req, res, next) => {
+    try {
+      const { department_id, email, new_password } = req.body;
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+
+      const department = await Department.findByPk(department_id);
+      if (!department) {
+        throw new AppError('Department not found', 404, 'NOT_FOUND');
+      }
+
+      const user = await DepartmentUser.findOne({
+        where: {
+          department_id,
+          [Op.or]: [{ email: normalizedEmail }, { username: normalizedEmail }]
+        }
+      });
+
+      if (!user) {
+        throw new AppError('Department user not found', 404, 'NOT_FOUND');
+      }
+
+      user.password_hash = new_password;
+      user.updated_at = new Date();
+      await user.save();
+
+      logger.info(
+        `[Admin] Department user password updated by ${req.auth.username} for ${normalizedEmail} (${department.slug})`
+      );
+
+      res.json({
+        success: true,
+        message: 'Department password updated successfully',
+        data: {
+          id: user.id,
+          email: user.email,
+          department: {
+            id: department.id,
+            name: department.name,
+            slug: department.slug
+          }
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  '/dashboard-users',
+  requireSuperadminAuth,
+  validateDashboardUserCreate,
+  async (req, res, next) => {
+    try {
+      const { password, email, permissions } = req.body;
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      const normalizedUsername = normalizedEmail;
+
+      const existingUser = await AdminUser.findOne({
+        where: {
+          [Op.or]: [{ username: normalizedUsername }, { email: normalizedEmail }]
+        }
+      });
+
+      if (existingUser) {
+        throw new AppError('Dashboard user already exists', 409, 'CONFLICT');
+      }
+
+      const createdUser = await AdminUser.create({
+        username: normalizedUsername,
+        password_hash: password,
+        email: normalizedEmail,
+        is_active: true,
+        permissions: Array.isArray(permissions) && permissions.length
+          ? permissions
+          : ['read', 'analytics'],
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+
+      logger.info(`[Admin] Dashboard user ${createdUser.username} created by ${req.auth.username}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Dashboard user created successfully',
+        data: {
+          id: createdUser.id,
+          username: createdUser.username,
+          email: createdUser.email,
+          permissions: createdUser.permissions
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.delete(
+  '/dashboard-users/:email',
+  requireSuperadminAuth,
+  validateDashboardUserDeleteParams,
+  async (req, res, next) => {
+    try {
+      const normalizedEmail = String(req.params.email || '').trim().toLowerCase();
+
+      const user = await AdminUser.findOne({ where: { email: normalizedEmail } });
+      if (!user) {
+        throw new AppError('Dashboard user not found', 404, 'NOT_FOUND');
+      }
+
+      if (user.id === req.auth.userId) {
+        throw new AppError('You cannot remove your own dashboard account', 400, 'INVALID_OPERATION');
+      }
+
+      await user.destroy();
+
+      logger.info(`[Admin] Dashboard user ${normalizedEmail} deleted by ${req.auth.username}`);
+
+      res.json({
+        success: true,
+        message: 'Dashboard user removed successfully',
+        data: {
+          email: normalizedEmail
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  '/dashboard-users/password',
+  requireSuperadminAuth,
+  validateAdminPasswordUpdate,
+  async (req, res, next) => {
+    try {
+      const { username, new_password } = req.body;
+      const normalizedUsername = String(username || '').trim();
+
+      const admin = await AdminUser.findOne({ where: { username: normalizedUsername, is_active: true } });
+      if (!admin) {
+        throw new AppError('Dashboard user not found', 404, 'NOT_FOUND');
+      }
+
+      admin.password_hash = new_password;
+      admin.updated_at = new Date();
+      await admin.save();
+
+      logger.info(
+        `[Admin] Dashboard password updated by ${req.auth.username} for ${normalizedUsername}`
+      );
+
+      res.json({
+        success: true,
+        message: 'Dashboard password updated successfully',
+        data: {
+          id: admin.id,
+          username: admin.username
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get('/submissions', requireAdminAuth, async (req, res, next) => {
   try {

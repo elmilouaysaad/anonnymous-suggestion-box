@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const DepartmentUser = require('../models/DepartmentUser');
+const Department = require('../models/Department');
 const Submission = require('../models/Submission');
 const Answer = require('../models/Answer');
 const { AppError } = require('../middleware/errorHandler');
@@ -12,6 +13,20 @@ const {
   validateAnswer
 } = require('../middleware/validation');
 const logger = require('../utils/logger');
+
+async function getAllowedDepartmentIds(departmentId) {
+  const generalDepartments = await Department.findAll({
+    where: {
+      slug: {
+        [Op.in]: ['general', 'genral']
+      }
+    },
+    attributes: ['id'],
+    raw: true
+  });
+
+  return Array.from(new Set([departmentId, ...generalDepartments.map((item) => item.id)]));
+}
 
 router.post('/login', validateDepartmentLogin, async (req, res, next) => {
   try {
@@ -73,9 +88,12 @@ router.get('/submissions', requireDepartmentAuth, async (req, res, next) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const allowedDepartmentIds = await getAllowedDepartmentIds(req.auth.departmentId);
 
     const where = {
-      department_id: req.auth.departmentId
+      department_id: {
+        [Op.in]: allowedDepartmentIds
+      }
     };
 
     if (status) {
@@ -135,7 +153,9 @@ router.post(
       const submission = await Submission.findOne({
         where: {
           id: submissionId,
-          department_id: req.auth.departmentId
+          department_id: {
+            [Op.in]: await getAllowedDepartmentIds(req.auth.departmentId)
+          }
         }
       });
 
@@ -197,7 +217,9 @@ router.post('/submissions/:id/hide', requireDepartmentAuth, async (req, res, nex
     const submission = await Submission.findOne({
       where: {
         id: submissionId,
-        department_id: req.auth.departmentId
+        department_id: {
+          [Op.in]: await getAllowedDepartmentIds(req.auth.departmentId)
+        }
       },
       include: [{ model: Answer, attributes: ['id'] }]
     });

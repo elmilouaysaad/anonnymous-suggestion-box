@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Sequelize } = require('sequelize');
+const { Sequelize, Op } = require('sequelize');
 const Department = require('../models/Department');
 const Submission = require('../models/Submission');
 const Answer = require('../models/Answer');
@@ -50,17 +50,33 @@ router.get('/submissions', async (req, res, next) => {
     const { department, page = 1, limit = 10, sort = 'newest' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const normalizedDepartment = String(department || '').trim().toLowerCase();
+    const isGeneralDepartment = normalizedDepartment === 'general' || normalizedDepartment === 'genral';
+    const isAllDepartments = normalizedDepartment === 'all';
     const where = {
       status: 'Answered',
       is_published: true
     };
 
-    if (normalizedDepartment && normalizedDepartment !== 'general' && normalizedDepartment !== 'all') {
+    if (normalizedDepartment && !isGeneralDepartment && !isAllDepartments) {
       const dept = await Department.findOne({ where: { slug: normalizedDepartment } });
       if (!dept) {
         throw new AppError('Department not found', 404, 'NOT_FOUND');
       }
-      where.department_id = dept.id;
+
+      const generalDepartments = await Department.findAll({
+        where: {
+          slug: {
+            [Op.in]: ['general', 'genral']
+          }
+        },
+        attributes: ['id'],
+        raw: true
+      });
+
+      const departmentIds = [dept.id, ...generalDepartments.map((item) => item.id)];
+      where.department_id = {
+        [Op.in]: departmentIds
+      };
     }
 
     const orderBy = sort === 'oldest' ? 'ASC' : 'DESC';

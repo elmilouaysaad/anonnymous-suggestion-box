@@ -41,6 +41,11 @@ function populateDepartmentsTags(departments) {
   const container = document.getElementById('departments-feed');
   if (!container) return;
 
+  const isGeneralSlug = (slug) => {
+    const normalized = String(slug || '').trim().toLowerCase();
+    return normalized === 'general' || normalized === 'genral';
+  };
+
   container.innerHTML = '';
 
   const generalButton = document.createElement('button');
@@ -59,7 +64,7 @@ function populateDepartmentsTags(departments) {
 
   departments.forEach(dept => {
     // Skip General since we already added it manually
-    if (dept.slug === 'general') {
+    if (isGeneralSlug(dept.slug)) {
       return;
     }
     

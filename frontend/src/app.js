@@ -55,6 +55,11 @@ function setupSecretAccess() {
       event.preventDefault();
       navigateToPage('admin');
     }
+
+    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'g') {
+      event.preventDefault();
+      navigateToPage('dashboard');
+    }
   });
 }
 
@@ -82,8 +87,10 @@ function navigateToPage(pageName) {
       loadBrowsePage();
     } else if (pageName === 'department-dashboard') {
       loadDepartmentDashboard();
-    } else if (pageName === 'admin-dashboard') {
-      loadAdminDashboard();
+    } else if (pageName === 'dashboard-main') {
+      loadDashboardMain();
+    } else if (pageName === 'admin-management') {
+      loadAdminManagement();
     }
 
     // Scroll to top
@@ -107,7 +114,13 @@ function setupFormValidation() {
     deptLoginForm.addEventListener('submit', handleDepartmentLogin);
   }
 
-  // Admin login form
+  // Dashboard login form
+  const dashboardLoginForm = document.getElementById('dashboard-login-form');
+  if (dashboardLoginForm) {
+    dashboardLoginForm.addEventListener('submit', handleDashboardLogin);
+  }
+
+  // Admin login form (password management)
   const adminLoginForm = document.getElementById('admin-login-form');
   if (adminLoginForm) {
     adminLoginForm.addEventListener('submit', handleAdminLogin);
@@ -122,7 +135,8 @@ async function handleFeedbackSubmit(e) {
 
   // Validate form
   const department = document.getElementById('department').value;
-  const category = document.querySelector('input[name="category"]:checked')?.value;
+  const categorySelect = document.getElementById('category');
+  const category = categorySelect ? categorySelect.value : document.querySelector('input[name="category"]:checked')?.value;
   const text = document.getElementById('feedback').value.trim();
 
   // Clear previous errors
@@ -136,12 +150,12 @@ async function handleFeedbackSubmit(e) {
   }
 
   if (!category) {
-    document.getElementById('category-error').textContent = 'Please select a feedback type';
+    document.getElementById('category-error').textContent = 'Please select a concern type';
     isValid = false;
   }
 
   if (!text) {
-    document.getElementById('feedback-error').textContent = 'Please provide feedback text';
+    document.getElementById('feedback-error').textContent = 'Please provide your concern details';
     isValid = false;
   }
 
@@ -190,6 +204,30 @@ async function handleDepartmentLogin(e) {
   }
 }
 
+async function handleDashboardLogin(e) {
+  e.preventDefault();
+
+  const username = document.getElementById('dashboard-username').value.trim();
+  const password = document.getElementById('dashboard-password').value;
+
+  if (!username || !password) {
+    showErrorToast('Please enter username and password');
+    return;
+  }
+
+  try {
+    const response = await getApiClient().adminLogin(username, password);
+
+    if (response?.data?.session_id) {
+      localStorage.setItem('adminSessionId', response.data.session_id);
+    }
+
+    navigateToPage('dashboard-main');
+  } catch (error) {
+    showErrorToast(error.message || 'Login failed');
+  }
+}
+
 async function handleAdminLogin(e) {
   e.preventDefault();
 
@@ -209,7 +247,7 @@ async function handleAdminLogin(e) {
       localStorage.setItem('adminSessionId', response.data.session_id);
     }
 
-    navigateToPage('admin-dashboard');
+    navigateToPage('admin-management');
   } catch (error) {
     showErrorToast(error.message || 'Login failed');
   }
@@ -231,6 +269,11 @@ async function loadInitialData() {
       return;
     }
 
+    if (access === 'dashboard') {
+      navigateToPage('dashboard');
+      return;
+    }
+
     const hash = (window.location.hash || '').toLowerCase();
     if (hash === '#department' || hash === '#dept') {
       navigateToPage('department');
@@ -239,6 +282,11 @@ async function loadInitialData() {
 
     if (hash === '#admin') {
       navigateToPage('admin');
+      return;
+    }
+
+    if (hash === '#dashboard') {
+      navigateToPage('dashboard');
       return;
     }
 

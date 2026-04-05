@@ -321,6 +321,69 @@ class ApiClient {
   }
 
   /**
+   * Delete department (superadmin)
+   */
+  async deleteDepartment(departmentId) {
+    return this.request(`/admin/departments/${encodeURIComponent(departmentId)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
+   * Update department user password (superadmin)
+   */
+  async updateDepartmentPassword(payload) {
+    return this.request('/admin/department-users/password', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
+   * Update dashboard user password (superadmin)
+   */
+  async updateDashboardPassword(payload) {
+    return this.request('/admin/dashboard-users/password', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
+   * Create dashboard user (superadmin)
+   */
+  async createDashboardUser(payload) {
+    return this.request('/admin/dashboard-users', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
+   * Remove dashboard user (superadmin)
+   */
+  async deleteDashboardUser(username) {
+    return this.request(`/admin/dashboard-users/${encodeURIComponent(username)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
    * Admin logout
    */
   async adminLogout() {
