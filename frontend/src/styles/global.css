@@ -230,7 +230,7 @@ body {
 
 .page {
   display: none;
-  padding: 0.25rem var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+  padding: 0.125rem var(--spacing-md) var(--spacing-md) var(--spacing-md);
   animation: fadeIn var(--transition-base);
 }
 
@@ -249,11 +249,7 @@ body {
   }
 }
 
-.container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-}
+
 
 /* Hero Section */
 .hero {
