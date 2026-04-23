@@ -274,11 +274,11 @@
                 </div>
                 <div class="form-group">
                   <label for="admin-manage-dept-email">Department User Email *</label>
-                  <input type="email" id="admin-manage-dept-email" name="email" required>
+                  <input type="email" id="admin-manage-dept-email" name="email" autocomplete="off" required>
                 </div>
                 <div class="form-group">
                   <label for="admin-manage-dept-password">New Password *</label>
-                  <input type="password" id="admin-manage-dept-password" name="new_password" minlength="6" required>
+                  <input type="password" id="admin-manage-dept-password" name="new_password" minlength="6" autocomplete="off" required>
                 </div>
                 <div class="form-actions compact-form-actions">
                   <button type="submit" class="btn btn-primary btn-sm">Update Department Password</button>
@@ -295,10 +295,6 @@
                 <div class="form-group">
                   <label for="admin-new-dept-name">New Department Name *</label>
                   <input type="text" id="admin-new-dept-name" name="name" required>
-                </div>
-                <div class="form-group">
-                  <label for="admin-new-dept-description">Description</label>
-                  <input type="text" id="admin-new-dept-description" name="description">
                 </div>
                 <div class="form-actions compact-form-actions">
                   <button type="submit" class="btn btn-primary btn-sm">Add Department</button>
@@ -327,11 +323,11 @@
               <form id="admin-update-dashboard-password-form" class="compact-form-grid">
                 <div class="form-group">
                   <label for="admin-manage-dashboard-username">Dashboard Username *</label>
-                  <input type="text" id="admin-manage-dashboard-username" name="username" required>
+                  <input type="text" id="admin-manage-dashboard-username" name="username" autocomplete="off" required>
                 </div>
                 <div class="form-group">
                   <label for="admin-manage-dashboard-password">New Password *</label>
-                  <input type="password" id="admin-manage-dashboard-password" name="new_password" minlength="6" required>
+                  <input type="password" id="admin-manage-dashboard-password" name="new_password" minlength="6" autocomplete="off" required>
                 </div>
                 <div class="form-actions compact-form-actions">
                   <button type="submit" class="btn btn-secondary btn-sm">Update Dashboard Password</button>
@@ -347,11 +343,11 @@
               <form id="admin-create-dashboard-user-form" class="compact-form-grid">
                 <div class="form-group">
                   <label for="admin-new-dashboard-email">Email *</label>
-                  <input type="email" id="admin-new-dashboard-email" name="email" required>
+                  <input type="email" id="admin-new-dashboard-email" name="email" autocomplete="off" required>
                 </div>
                 <div class="form-group">
                   <label for="admin-new-dashboard-password">Password *</label>
-                  <input type="password" id="admin-new-dashboard-password" name="password" minlength="6" required>
+                  <input type="password" id="admin-new-dashboard-password" name="password" minlength="6" autocomplete="off" required>
                 </div>
                 <div class="form-actions compact-form-actions">
                   <button type="submit" class="btn btn-primary btn-sm">Add Dashboard User</button>
@@ -362,7 +358,7 @@
               <form id="admin-delete-dashboard-user-form" class="compact-form-grid">
                 <div class="form-group">
                   <label for="admin-delete-dashboard-email">Dashboard Email to Remove *</label>
-                  <input type="email" id="admin-delete-dashboard-email" name="email" required>
+                  <input type="email" id="admin-delete-dashboard-email" name="email" autocomplete="off" required>
                 </div>
                 <div class="form-actions compact-form-actions">
                   <button type="submit" class="btn btn-error btn-sm">Remove Dashboard User</button>

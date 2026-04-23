@@ -3,6 +3,7 @@ const Submission = require('./Submission');
 const Answer = require('./Answer');
 const DepartmentUser = require('./DepartmentUser');
 const AdminUser = require('./AdminUser');
+const DashboardUser = require('./DashboardUser');
 const HelpfulnessFeedback = require('./HelpfulnessFeedback');
 
 // Department relationships
@@ -32,5 +33,6 @@ module.exports = {
   Answer,
   DepartmentUser,
   AdminUser,
+  DashboardUser,
   HelpfulnessFeedback
 };

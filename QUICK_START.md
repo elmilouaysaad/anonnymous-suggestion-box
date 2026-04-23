@@ -11,77 +11,7 @@ Get the Anonymous Complaints Platform up and running in minutes.
 
 ## Database Setup
 
-### 1. Create Database User and Database
-
-Open PostgreSQL (`psql`) and run:
-
-```sql
-CREATE USER suggestion_box_user WITH PASSWORD 'secure_password_change_me';
-CREATE DATABASE suggestion_box OWNER suggestion_box_user;
-GRANT ALL PRIVILEGES ON DATABASE suggestion_box TO suggestion_box_user;
-```
-
-### 2. Configure Environment Variables
-
-Create or update `backend/.env`:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=suggestion_box
-DB_USER=suggestion_box_user
-DB_PASSWORD=secure_password_change_me
-NODE_ENV=development
-PORT=3000
-API_URL=http://localhost:3000
-JWT_SECRET=your-secret-key-here
-SESSION_TIMEOUT=4h
-CORS_ORIGIN=http://localhost:5500
-```
-
-### 3. Create Tables
-
-In `backend/src/index.js`, temporarily uncomment the sync line:
-
-```js
-await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-```
-
-Run backend once to create tables:
-
-```bash
-cd backend
-npm run dev
-```
-
-Then **re-comment the sync line** to prevent accidental schema changes.
-
-### 4. Seed Initial Data (Admin & Departments)
-
-Generate a bcrypt password hash:
-
-```bash
-cd backend
-node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('Admin123!',12).then(h=>console.log(h));"
-```
-
-Copy the hash output, then run in PostgreSQL:
-
-```sql
--- Add General department
-INSERT INTO departments (name, slug, description, created_at, updated_at)
-VALUES ('General', 'general', 'General inquiries and feedback', NOW(), NOW())
-ON CONFLICT (slug) DO NOTHING;
-
--- Add admin user (replace HASH_HERE with your generated hash)
-INSERT INTO admin_users (username, password_hash, full_name, email, is_active, permissions, created_at, updated_at)
-VALUES ('admin', 'HASH_HERE', 'System Admin', 'admin@example.com', true, ARRAY['read','write','analytics'], NOW(), NOW())
-ON CONFLICT (username) DO NOTHING;
-```
-
-✅ Database is now ready!
-
-For detailed database setup instructions, see [DATABASE_SETUP_README.md](DATABASE_SETUP_README.md).
+For database setup instructions, see [DATABASE_SETUP_README.md](DATABASE_SETUP_README.md).
 
 ## Installation
 

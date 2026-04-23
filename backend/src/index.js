@@ -23,8 +23,11 @@ let dbReadyPromise = null;
 
 const ensureDatabaseReady = async () => {
   if (!dbReadyPromise) {
-    dbReadyPromise = sequelize.authenticate().then(() => {
+    dbReadyPromise = sequelize.authenticate().then(async () => {
       logger.info('✓ Database connection successful');
+      
+      // Sync models (creates/alters tables as needed)
+      await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
       logger.info('✓ Database models synced');
       return true;
     });

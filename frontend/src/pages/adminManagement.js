@@ -173,8 +173,7 @@ async function handleDepartmentCreate(event) {
   const form = event.target;
   const formData = new FormData(form);
   const payload = {
-    name: String(formData.get('name') || '').trim(),
-    description: String(formData.get('description') || '').trim()
+    name: String(formData.get('name') || '').trim()
   };
 
   if (!payload.name) {

@@ -32,7 +32,7 @@ Important:
 
 ## 3. Create PostgreSQL User and Database
 
-Open `psql` as postgres superuser and run:
+Open `psql -U postgres` as postgres superuser and run:
 
 ```sql
 CREATE USER suggestion_box_user WITH PASSWORD 'secure_password_change_me';
@@ -65,40 +65,74 @@ After the server starts and tables are created:
 - Stop backend.
 - Re-comment that sync line to avoid accidental schema changes later.
 
-## 5. Seed Initial Department and Admin Accounts
+## 5. Seed Initial Departments and Users
 
-You need at least one department user and one admin user to log in to dashboards.
+You need:
+- **At least 1 Department** for submissions
+- **At least 1 AdminUser** (Superadmin) for managing dashboard & department users
+- **At least 1 DepartmentUser** for department dashboard access
+- **Dashboard Users** (optional) for analytics-only access
 
-### 5.1 Generate bcrypt password hash
+### 5.1 Generate bcrypt password hashes
 
-From [backend](backend) folder:
+From [backend](backend) folder, generate hashes for each password:
 
 ```bash
 node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('Admin123!',12).then(h=>console.log(h));"
+node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('DeptUser123!',12).then(h=>console.log(h));"
+node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('Dashboard123!',12).then(h=>console.log(h));"
 ```
 
-Copy the hash output.
+Save the output hashes.
 
-### 5.2 Insert seed rows
+### 5.2 Insert seed data
 
-In `psql`, replace `HASH_HERE` with generated hash:
+In `psql`, use the generated hashes:
 
-$2a$12$iKro6zJ3hXkVnz4DuzAlzuPjjQau9OtQFav/d3oZi6yjWYIXBt8ES
+**Example hashes:**
+- Admin/Superadmin hash: `$2a$12$hESsXJL3B2flCI3WLdbJw.pMG.iXkMddOETqJhwazgq.VlDpiSx9W`
+- Department user hash: `$2a$12$al67fJ8VchF3oSPUQO61jeHIfTX0qGugs/rmlTwCxH7IMiNXVGQui`
+- Dashboard user hash: `$2a$12$DkG5HchuWH6a9vqHDNoQ9.dMT0rC0CJMauNj8ofzwTrS3DYpeSuMm`
 
+Run this SQL:
+psql -U suggestion_box_user -d suggestion_box
 ```sql
+-- Create Departments
 INSERT INTO departments (name, slug, description, created_at, updated_at)
-VALUES ('IT Services', 'it-services', 'Technical support', NOW(), NOW())
+VALUES 
+  ('IT Services', 'it-services', 'Technical support and infrastructure', NOW(), NOW())
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO department_users (username, password_hash, department_id, full_name, email, is_active, created_at, updated_at)
-SELECT 'deptadmin', '$2a$12$iKro6zJ3hXkVnz4DuzAlzuPjjQau9OtQFav/d3oZi6yjWYIXBt8ES', d.id, 'Department Admin', 'dept@example.com', true, NOW(), NOW()
-FROM departments d
-WHERE d.slug = 'it-services'
+-- Create Superadmin User (manage all dashboard & department users)
+INSERT INTO admin_users (username, password_hash, full_name, email, is_active, permissions, created_at, updated_at)
+VALUES 
+  ('admin@example.com', '$2a$12$hESsXJL3B2flCI3WLdbJw.pMG.iXkMddOETqJhwazgq.VlDpiSx9W', 'System Administrator', 'admin@example.com', true, ARRAY['read','analytics','write','delete','manage_department_users'], NOW(), NOW())
 ON CONFLICT (username) DO NOTHING;
 
+-- Create Dashboard Users (read-only analytics access)
 INSERT INTO admin_users (username, password_hash, full_name, email, is_active, permissions, created_at, updated_at)
-VALUES ('superadmin', '$2a$12$iKro6zJ3hXkVnz4DuzAlzuPjjQau9OtQFav/d3oZi6yjWYIXBt8ES', 'System Admin', 'admin@example.com', true, ARRAY['read','analytics'], NOW(), NOW())
+VALUES 
+  ('analytics@example.com', '$2a$12$DkG5HchuWH6a9vqHDNoQ9.dMT0rC0CJMauNj8ofzwTrS3DYpeSuMm', 'Analytics Viewer', 'analytics@example.com', true, ARRAY['read','analytics'], NOW(), NOW()),
+  ('manager@example.com', '$2a$12$DkG5HchuWH6a9vqHDNoQ9.dMT0rC0CJMauNj8ofzwTrS3DYpeSuMm', 'Dashboard Manager', 'manager@example.com', true, ARRAY['read','analytics','write'], NOW(), NOW())
 ON CONFLICT (username) DO NOTHING;
+
+-- Create Department Users (department-specific access)
+INSERT INTO department_users (username, password_hash, department_id, full_name, email, is_active, created_at, updated_at)
+SELECT 'it@example.com', '$2a$12$hESsXJL3B2flCI3WLdbJw.pMG.iXkMddOETqJhwazgq.VlDpiSx9W', d.id, 'IT Department Admin', 'it@example.com', true, NOW(), NOW()
+FROM departments d WHERE d.slug = 'it-services'
+ON CONFLICT (username) DO NOTHING;
+
+```
+
+**User Credentials Summary:**
+
+| User Type | Email | Password | Dashboard | Permissions |
+|-----------|-------|----------|-----------|-------------|
+| Superadmin | `admin@example.com` | `Admin123!` | Admin Management Panel | Manage all users & submissions |
+| Dashboard | `analytics@example.com` | `Dashboard123!` | Analytics Dashboard | Read, Analytics (view-only) |
+| Dashboard | `manager@example.com` | `Dashboard123!` | Analytics Dashboard | Read, Analytics, Write |
+| Department | `it@example.com` | `Admin123!` | IT Services Dashboard | Department submissions & answers |
+submissions & answers |
 ```
 
 ## 6. Verify Database Connectivity
