@@ -18,10 +18,11 @@ async function loadDashboardMain() {
 
 async function refreshDashboardMain() {
   try {
-    const [analyticsResponse, keywordsResponse, submissionsResponse, engagementTrendResponse] = await Promise.all([
+    const [analyticsResponse, keywordsResponse, submissionsResponse, issueGroupsResponse, engagementTrendResponse] = await Promise.all([
       getApiClient().getAnalytics(),
       getApiClient().getKeywordAnalysis({ limit: 100 }),
       getApiClient().getAdminSubmissions({ page: 1, limit: 500 }),
+      getApiClient().getIssueGroups({ limit: 10 }),
       getApiClient().getEngagementTrend(14)
     ]);
 
@@ -32,6 +33,7 @@ async function refreshDashboardMain() {
     renderAdminOverview(analytics, sla);
     renderAdminDepartmentPerformance(analytics?.department_performance || [], submissions, sla.byDepartment);
     renderAdminKeywords(keywordsResponse?.data?.keywords || []);
+    renderAdminIssueGroups(issueGroupsResponse?.data || {});
     renderEngagementLineChart(engagementTrendResponse?.data?.points || []);
   } catch (error) {
     if (String(error.message || '').includes('401')) {
@@ -51,6 +53,7 @@ function renderAdminOverview(data, sla) {
 
   const overview = data.overview || {};
   const helpfulness = data.helpfulness || {};
+  const sentimentBreakdown = data.sentiment_breakdown || {};
 
   const cards = [
     { label: 'Total', value: overview.total_submissions || 0 },
@@ -59,7 +62,10 @@ function renderAdminOverview(data, sla) {
     { label: 'Hidden', value: overview.hidden_submissions || 0 },
     { label: 'Helpful %', value: `${helpfulness.helpful_percentage || 0}%` },
     { label: 'Late > 2 Weeks', value: sla?.lateFeedback || 0 },
-    { label: 'No Feedback > 3 Weeks', value: sla?.noFeedback || 0 }
+    { label: 'No Feedback > 3 Weeks', value: sla?.noFeedback || 0 },
+    { label: 'Positive', value: sentimentBreakdown.Positive || 0 },
+    { label: 'Neutral', value: sentimentBreakdown.Neutral || 0 },
+    { label: 'Negative', value: sentimentBreakdown.Negative || 0 }
   ];
 
   container.innerHTML = cards
@@ -86,14 +92,12 @@ function renderAdminDepartmentPerformance(rows, submissions, slaByDepartment) {
       const total = Number(row.total_submissions || 0);
       const answered = Number(row.answered_count || 0);
       const hidden = hiddenByDepartment.get(String(row.id)) || 0;
-      const rate = total > 0 ? Math.round((answered / total) * 100) : 0;
       const sentiment = sentimentByDepartment.get(String(row.id)) || {
         Positive: 0,
         Neutral: 0,
         Negative: 0
       };
-      const sentimentTotal = sentiment.Positive + sentiment.Neutral + sentiment.Negative;
-      const sentimentScore = toSentimentScore(sentiment, sentimentTotal);
+      const sentimentFace = getSentimentFace(sentiment);
       const sla = (slaByDepartment && slaByDepartment.get(String(row.id))) || { lateFeedback: 0, noFeedback: 0 };
 
       return `<tr>
@@ -101,8 +105,7 @@ function renderAdminDepartmentPerformance(rows, submissions, slaByDepartment) {
         <td>${total}</td>
         <td>${answered}</td>
         <td>${hidden}</td>
-        <td>${rate}%</td>
-        <td>${sentimentScore}%</td>
+        <td><div class="issue-sentiment-face">${sentimentFace}</div></td>
         <td>${sla.lateFeedback}</td>
         <td>${sla.noFeedback}</td>
       </tr>`;
@@ -117,7 +120,6 @@ function renderAdminDepartmentPerformance(rows, submissions, slaByDepartment) {
           <th>Total</th>
           <th>Answered</th>
           <th>Hidden</th>
-          <th>Rate</th>
           <th>Sentiment</th>
           <th>Late > 2w</th>
           <th>No Feedback > 3w</th>
@@ -141,8 +143,43 @@ function renderAdminKeywords(keywords) {
     return;
   }
 
-  const topKeywords = keywords.slice(0, 90);
-  const maxCount = Math.max(...topKeywords.map((item) => Number(item.count || 0)), 1);
+  const keywordMap = new Map();
+
+  for (const item of keywords) {
+    const keyword = String(item?.keyword || '').trim().toLowerCase();
+    if (!keyword) {
+      continue;
+    }
+
+    const count = Number(item?.count ?? 0);
+    const score = Number(item?.score ?? count);
+    const safeCount = Number.isFinite(count) ? count : 0;
+    const safeScore = Number.isFinite(score) ? score : safeCount;
+
+    const current = keywordMap.get(keyword) || {
+      keyword,
+      count: 0,
+      score: 0
+    };
+
+    current.count += safeCount;
+    current.score += safeScore;
+    keywordMap.set(keyword, current);
+  }
+
+  const topKeywords = Array.from(keywordMap.values())
+    .sort((a, b) => (b.score - a.score) || (b.count - a.count) || a.keyword.localeCompare(b.keyword))
+    .slice(0, 140);
+
+  if (!topKeywords.length) {
+    container.innerHTML = '<p class="subtle">No keyword data available.</p>';
+    return;
+  }
+
+  const maxScore = Math.max(
+    ...topKeywords.map((item) => Number(item.score ?? item.count ?? 0)),
+    1
+  );
   const centerIndex = 0;
 
   container.innerHTML = `
@@ -150,7 +187,8 @@ function renderAdminKeywords(keywords) {
       ${topKeywords
     .map((item, index) => {
       const count = Number(item.count || 0);
-      const scale = count / maxCount;
+      const score = Number(item.score ?? item.count ?? 0);
+      const scale = score / maxScore;
       const fontSize = Math.round(10 + scale * 9);
       const opacity = (0.6 + scale * 0.4).toFixed(2);
       const span = scale > 0.8 ? 3 : scale > 0.5 ? 2 : 1;
@@ -159,6 +197,64 @@ function renderAdminKeywords(keywords) {
     })
     .join('')}
     </div>
+  `;
+}
+
+function renderAdminIssueGroups(data) {
+  const container = document.getElementById('admin-issue-groups');
+  if (!container) {
+    return;
+  }
+
+  const groups = Array.isArray(data.groups) ? data.groups : [];
+
+  if (!groups.length) {
+    container.innerHTML = '<p class="subtle">No issue themes available yet.</p>';
+    return;
+  }
+
+  const totalIssues = Number(data.total_issues || groups.reduce((sum, group) => sum + Number(group.count || 0), 0));
+
+  container.innerHTML = `
+    <table class="mini-table">
+      <thead>
+        <tr>
+          <th>Theme</th>
+          <th>Count</th>
+          <th>Type Mix</th>
+          <th>Sentiment</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${groups
+          .map((group) => {
+            const count = Number(group.count || 0);
+            const share = totalIssues > 0 ? Math.round((count / totalIssues) * 100) : 0;
+            const categories = group.categories || {};
+            const sentiment = group.sentiment || {};
+            const sentimentFace = getSentimentFace(sentiment);
+
+            return `<tr>
+              <td>
+                <div class="issue-theme-name">${escapeHtml(group.issue_group || 'General')}</div>
+                <div class="issue-theme-share">${share}% of issues</div>
+              </td>
+              <td>${count}</td>
+              <td>
+                <div class="issue-type-mix">
+                  <span class="pill">Q ${categories.Question || 0}</span>
+                  <span class="pill">C ${categories.Complaint || 0}</span>
+                  <span class="pill">S ${categories.Suggestion || 0}</span>
+                </div>
+              </td>
+              <td>
+                <div class="issue-sentiment-face">${sentimentFace}</div>
+              </td>
+            </tr>`;
+          })
+          .join('')}
+      </tbody>
+    </table>
   `;
 }
 
@@ -268,6 +364,27 @@ function computeDepartmentSentiments(submissions) {
   });
 
   return map;
+}
+
+function getSentimentFace(sentiment) {
+  const positive = Number(sentiment?.Positive || 0);
+  const neutral = Number(sentiment?.Neutral || 0);
+  const negative = Number(sentiment?.Negative || 0);
+  const total = positive + neutral + negative;
+
+  if (!total) {
+    return '<span class="sentiment-face sentiment-face-neutral"><span class="sentiment-face-icon sentiment-face-icon-neutral" aria-hidden="true"></span><span class="sentiment-label">Neutral</span></span>';
+  }
+
+  if (positive >= neutral && positive >= negative) {
+    return '<span class="sentiment-face sentiment-face-positive"><span class="sentiment-face-icon sentiment-face-icon-positive" aria-hidden="true"></span><span class="sentiment-label">Positive</span></span>';
+  }
+
+  if (negative > positive && negative > neutral) {
+    return '<span class="sentiment-face sentiment-face-negative"><span class="sentiment-face-icon sentiment-face-icon-negative" aria-hidden="true"></span><span class="sentiment-label">Negative</span></span>';
+  }
+
+  return '<span class="sentiment-face sentiment-face-neutral"><span class="sentiment-face-icon sentiment-face-icon-neutral" aria-hidden="true"></span><span class="sentiment-label">Neutral</span></span>';
 }
 
 function computeHiddenByDepartment(submissions) {

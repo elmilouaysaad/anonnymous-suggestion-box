@@ -10,6 +10,7 @@ const Answer = require('../models/Answer');
 const HelpfulnessFeedback = require('../models/HelpfulnessFeedback');
 const { AppError } = require('../middleware/errorHandler');
 const { requireAdminAuth, requireSuperadminAuth } = require('../middleware/auth');
+const { analyzeSubmissionText, getIssueGroupWeight } = require('../utils/textAnalysis');
 const {
   validateAdminLogin,
   validateDepartmentUserCreate,
@@ -169,6 +170,98 @@ router.get('/analytics', requireAdminAuth, async (req, res, next) => {
           helpful_votes: helpfulVotes,
           helpful_percentage: totalVotes > 0 ? Math.round((helpfulVotes / totalVotes) * 100) : 0
         }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/issue-groups', requireAdminAuth, async (req, res, next) => {
+  try {
+    const { department, limit = 10 } = req.query;
+    const where = {};
+
+    if (department) {
+      const dept = await Department.findOne({ where: { slug: String(department).trim().toLowerCase() } });
+      if (!dept) {
+        throw new AppError('Department not found', 404, 'NOT_FOUND');
+      }
+      where.department_id = dept.id;
+    }
+
+    const submissions = await Submission.findAll({
+      where,
+      include: [
+        {
+          model: Department,
+          attributes: ['id', 'name', 'slug']
+        }
+      ],
+      attributes: ['id', 'text', 'category', 'sentiment', 'status', 'submission_date', 'department_id'],
+      order: [['submission_date', 'DESC']],
+      limit: 500
+    });
+
+    const groupMap = new Map();
+    const categoryTotals = { Question: 0, Complaint: 0, Suggestion: 0 };
+    const sentimentTotals = { Positive: 0, Neutral: 0, Negative: 0 };
+
+    for (const submission of submissions) {
+      const text = String(submission.text || '').trim();
+      if (!text) {
+        continue;
+      }
+
+      const analysis = analyzeSubmissionText(text);
+      const groupName = analysis.issue_group || 'General';
+      const category = String(submission.category || '').trim();
+      const sentiment = String(submission.sentiment || analysis.sentiment || '').trim();
+
+      if (Object.prototype.hasOwnProperty.call(categoryTotals, category)) {
+        categoryTotals[category] += 1;
+      }
+      if (Object.prototype.hasOwnProperty.call(sentimentTotals, sentiment)) {
+        sentimentTotals[sentiment] += 1;
+      }
+
+      if (!groupMap.has(groupName)) {
+        groupMap.set(groupName, {
+          issue_group: groupName,
+          count: 0,
+          categories: { Question: 0, Complaint: 0, Suggestion: 0 },
+          sentiment: { Positive: 0, Neutral: 0, Negative: 0 },
+          importance: getIssueGroupWeight(groupName)
+        });
+      }
+
+      const bucket = groupMap.get(groupName);
+      bucket.count += 1;
+      if (Object.prototype.hasOwnProperty.call(bucket.categories, category)) {
+        bucket.categories[category] += 1;
+      }
+      if (Object.prototype.hasOwnProperty.call(bucket.sentiment, sentiment)) {
+        bucket.sentiment[sentiment] += 1;
+      }
+    }
+
+    const groups = Array.from(groupMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, Math.max(1, Math.min(20, parseInt(limit, 10) || 10)))
+      .map((group) => ({
+        ...group,
+        positive_share: group.count ? Math.round((group.sentiment.Positive / group.count) * 100) : 0,
+        neutral_share: group.count ? Math.round((group.sentiment.Neutral / group.count) * 100) : 0,
+        negative_share: group.count ? Math.round((group.sentiment.Negative / group.count) * 100) : 0
+      }));
+
+    res.json({
+      success: true,
+      data: {
+        total_issues: submissions.length,
+        category_totals: categoryTotals,
+        sentiment_totals: sentimentTotals,
+        groups
       }
     });
   } catch (error) {
@@ -628,25 +721,41 @@ router.get('/keywords', requireAdminAuth, async (req, res, next) => {
 
     const submissions = await Submission.findAll({
       where,
-      attributes: ['id', 'keywords'],
+      attributes: ['id', 'text', 'keywords'],
       limit: 500
     });
 
     const keywordMap = new Map();
     for (const submission of submissions) {
-      const keywords = Array.isArray(submission.keywords) ? submission.keywords : [];
+      const text = String(submission.text || '').trim();
+      const keywords = Array.isArray(submission.keywords) && submission.keywords.length
+        ? submission.keywords
+        : analyzeSubmissionText(text).keywords;
+      const analysis = analyzeSubmissionText(text);
+      const groupWeight = getIssueGroupWeight(analysis.issue_group || 'General');
+
       for (const rawKeyword of keywords) {
         const keyword = String(rawKeyword || '').trim().toLowerCase();
         if (!keyword) {
           continue;
         }
-        keywordMap.set(keyword, (keywordMap.get(keyword) || 0) + 1);
+
+        const current = keywordMap.get(keyword) || { keyword, count: 0, score: 0, groups: {} };
+        current.count += 1;
+        current.score += groupWeight;
+        current.groups[analysis.issue_group || 'General'] = (current.groups[analysis.issue_group || 'General'] || 0) + 1;
+        keywordMap.set(keyword, current);
       }
     }
 
     const keywordStats = Array.from(keywordMap.entries())
-      .map(([keyword, count]) => ({ keyword, count }))
-      .sort((a, b) => b.count - a.count)
+      .map(([, entry]) => ({
+        keyword: entry.keyword,
+        count: entry.count,
+        score: Number(entry.score.toFixed(2)),
+        groups: entry.groups
+      }))
+      .sort((a, b) => (b.score - a.score) || (b.count - a.count))
       .slice(0, 100);
 
     res.json({

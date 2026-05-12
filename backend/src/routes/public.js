@@ -181,7 +181,7 @@ router.post('/submissions', validateSubmission, async (req, res, next) => {
     });
 
     logger.info(
-      `[Submission] Created submission ${submission.id} for department ${dept.name} | sentiment=${analysis.sentiment} | keywords=${analysis.keywords.join(',')}`
+      `[Submission] Created submission ${submission.id} for department ${dept.name} | sentiment=${analysis.sentiment} | issue_group=${analysis.issue_group} | keywords=${analysis.keywords.join(',')}`
     );
 
     res.status(201).json({

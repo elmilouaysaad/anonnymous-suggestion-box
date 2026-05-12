@@ -57,7 +57,7 @@ await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
 Then run backend once:
 
 ```bash
-cd "C:/Users/proes/Downloads/annonimous complaints/backend"
+cd "backend"
 npm run dev
 ```
 
@@ -140,7 +140,7 @@ submissions & answers |
 Start backend:
 
 ```bash
-cd "C:/Users/proes/Downloads/annonimous complaints/backend"
+cd "backend"
 npm run dev
 ```
 

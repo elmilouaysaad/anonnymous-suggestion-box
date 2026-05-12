@@ -284,6 +284,23 @@ class ApiClient {
   }
 
   /**
+   * Get issue group analysis (admin)
+   */
+  async getIssueGroups(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.department) params.append('department', filters.department);
+    if (filters.limit) params.append('limit', filters.limit);
+
+    const queryString = params.toString();
+    const endpoint = `/admin/issue-groups${queryString ? '?' + queryString : ''}`;
+    return this.request(endpoint, {
+      headers: {
+        'X-Session-ID': this.adminToken || ''
+      }
+    });
+  }
+
+  /**
    * Get engagement trend (admin)
    */
   async getEngagementTrend(days = 14) {

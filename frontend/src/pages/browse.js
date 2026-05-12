@@ -243,10 +243,12 @@ function createSubmissionCard(submission) {
       </div>
       <div class="helpfulness-buttons">
         <button class="helpfulness-btn helpfulness-btn-positive" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="true" title="Helpful">
-          😊 Helpful
+          <span class="helpfulness-face sentiment-face-icon sentiment-face-icon-positive" aria-hidden="true"></span>
+          <span>Helpful</span>
         </button>
         <button class="helpfulness-btn helpfulness-btn-negative" data-answer-id="${answer?.id}" data-submission-id="${submission.id}" data-helpful="false" title="Not Helpful">
-          😞 Not Helpful
+          <span class="helpfulness-face sentiment-face-icon sentiment-face-icon-negative" aria-hidden="true"></span>
+          <span>Not Helpful</span>
         </button>
       </div>
     </div>
